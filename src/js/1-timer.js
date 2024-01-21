@@ -4,14 +4,16 @@ import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 //variables
 let userSelectedDate;
-const inputRef = document.querySelector(`#datetime-pocker`);
-const buttonRef = document.querySelector(`button`);
-const timeValueArray = document.querySelectorAll(`.value`);
-buttonRef.disabled = true;
 let intervalId = null;
+const startButtonRef = document.querySelector('button[data-start]');
+const inputRef = document.querySelector('#datetime-picker');
+startButtonRef.disabled = true;
 let isActive = false;
-//
-const options = {
+
+const timeValueArray = document.querySelectorAll(`.value`);
+startButtonRef.addEventListener('click', handleStartTimer);
+
+const fp = flatpickr('#datetime-picker', {
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
@@ -19,25 +21,23 @@ const options = {
   onClose(selectedDates) {
     userSelectedDate = selectedDates[0];
     if (userSelectedDate - new Date() < 0) {
-      buttonRef.disabled = true;
-      buttonRef.classList.remove('active-btn');
+      startButtonRef.disabled = true;
+      startButtonRef.classList.remove('active-btn');
       iziToast.error({
         title: 'Error',
         message: 'Please choose a date in the future',
-        position: 'topRight', 
+        position: 'topRight',
         titleColor: 'white',
         messageColor: 'white',
         timeout: false,
         backgroundColor: '#EF4040',
       });
     } else {
-      buttonRef.disabled = false;
-      buttonRef.classList.add('active-btn');
+      startButtonRef.disabled = false;
+      startButtonRef.classList.add('active-btn');
     }
   },
-};
-const fp = flatpickr('#datetime-picker', options)
-
+});
 function convertMs(ms) {
   // Number of milliseconds per unit of time
   const second = 1000;
@@ -59,7 +59,31 @@ function convertMs(ms) {
 function addLeadingZero(value) {
   return value.toString().padStart(2, '0');
 }
-buttonRef.addEventListener('click', handleStartTimer);
+
 function handleStartTimer() {
-  
+  if (isActive) {
+    clearInterval(intervalId);
+  }
+
+  isActive = true;
+  startButtonRef.disabled = true;
+  startButtonRef.classList.remove('active-btn');
+  inputRef.disabled = true;
+  inputRef.classList.add('disable-input');
+  intervalId = setInterval(() => {
+    const startTime = Date.now();
+    const differ = userSelectedDate - startTime;
+
+    if (differ < 1000) {
+      clearInterval(intervalId);
+      inputRef.disabled = false;
+      inputRef.classList.remove('disable-input');
+    }
+    const convertedTime = convertMs(differ);
+
+    timeValueArray[0].textContent = addLeadingZero(convertedTime.days);
+    timeValueArray[1].textContent = addLeadingZero(convertedTime.hours);
+    timeValueArray[2].textContent = addLeadingZero(convertedTime.minutes);
+    timeValueArray[3].textContent = addLeadingZero(convertedTime.seconds);
+  }, 1000);
 }
